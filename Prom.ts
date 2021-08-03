@@ -11,7 +11,7 @@ class PromTest {
 
     run = async () => {
         const q = 'node_memory_Cached_bytes{instance="10.0.0.8:9100", job="server-info"}'
-        const {result, resultType} = await prom.instantQuery(q)
+        const {result, resultType} = await this.prom.instantQuery(q)
         console.log(JSON.stringify(result))
         console.log(JSON.stringify(resultType))
     }
