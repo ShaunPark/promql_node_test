@@ -24,12 +24,19 @@ class PromTest {
         const start = now - 60 * 60 * 1000
         const end = now
         const step = 60
-        const { result } = await this.prom.rangeQuery(q, start, end, step)
+        const result = await (await this.prom.rangeQuery(q, start, end, step)).result as range[]
 
-        result.forEach(r => {
-            console.log(JSON.stringify(r))
+        result.forEach( r => {
+            r.values.forEach( v => {
+                console.log(JSON.stringify(v))
+            })
         })
     }
+}
+
+type range = {
+    metric:object,
+    values:Array<{time:Date, value:number}>
 }
 
 new PromTest().run2()
