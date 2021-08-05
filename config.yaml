@@ -1,0 +1,16 @@
+dryRun: true
+ratioForPageCacheDrop: 
+  duration: 15
+  ratio: 50
+ratioForAllDrop: 
+  duration: 5
+  ratio: 70
+processInterval: 10000
+elasticSearch: 
+  host: 3.37.79.125
+  port: 9200
+  logIndex: log
+  statusIndex: status
+  useApiKey: false
+prometheus: 
+  url: http://mon.beedev.lge.com/prometheus
