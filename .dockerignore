@@ -3,3 +3,4 @@ npm-debug.log
 build
 config.yaml
 a.json
+config.prom.yaml
