@@ -1,155 +1,146 @@
-{
-    "metric": {
-        "name": "node_memory_Cached_bytes",
-        "labels": {
-            "instance": "10.0.0.8:9100",
-            "job": "server-info"
+[
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.101:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-7wcml",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624418816
         }
     },
-    "values": [
-        {
-            "time": "2021-08-03T05:01:51.694Z",
-            "value": 1841864704
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.135:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-q5bn2",
+                "service": "po-prometheus-node-exporter"
+            }
         },
-        {
-            "time": "2021-08-03T05:02:51.694Z",
-            "value": 1844056064
-        },
-        {
-            "time": "2021-08-03T05:03:51.694Z",
-            "value": 1846321152
-        },
-        {
-            "time": "2021-08-03T05:04:51.694Z",
-            "value": 1848516608
-        },
-        {
-            "time": "2021-08-03T05:05:51.694Z",
-            "value": 1850732544
-        },
-        {
-            "time": "2021-08-03T05:06:51.694Z",
-            "value": 1852997632
-        },
-        {
-            "time": "2021-08-03T05:07:51.694Z",
-            "value": 1855188992
-        },
-        {
-            "time": "2021-08-03T05:08:51.694Z",
-            "value": 1857413120
-        },
-        {
-            "time": "2021-08-03T05:09:51.694Z",
-            "value": 1859674112
-        },
-        {
-            "time": "2021-08-03T05:10:51.694Z",
-            "value": 1861906432
-        },
-        {
-            "time": "2021-08-03T05:11:51.694Z",
-            "value": 1864130560
-        },
-        {
-            "time": "2021-08-03T05:12:51.694Z",
-            "value": 1866338304
-        },
-        {
-            "time": "2021-08-03T05:13:51.694Z",
-            "value": 1868582912
-        },
-        {
-            "time": "2021-08-03T05:14:51.694Z",
-            "value": 1870778368
-        },
-        {
-            "time": "2021-08-03T05:15:51.694Z",
-            "value": 1873018880
-        },
-        {
-            "time": "2021-08-03T05:16:51.694Z",
-            "value": 1875263488
-        },
-        {
-            "time": "2021-08-03T05:17:51.694Z",
-            "value": 1877491712
-        },
-        {
-            "time": "2021-08-03T05:18:51.694Z",
-            "value": 1879715840
-        },
-        {
-            "time": "2021-08-03T05:19:51.694Z",
-            "value": 1881907200
-        },
-        {
-            "time": "2021-08-03T05:20:51.694Z",
-            "value": 1884135424
-        },
-        {
-            "time": "2021-08-03T05:21:51.694Z",
-            "value": 1890586624
-        },
-        {
-            "time": "2021-08-03T05:22:51.694Z",
-            "value": 1892823040
-        },
-        {
-            "time": "2021-08-03T05:23:51.694Z",
-            "value": 1895378944
-        },
-        {
-            "time": "2021-08-03T05:24:51.694Z",
-            "value": 1897578496
-        },
-        {
-            "time": "2021-08-03T05:25:51.694Z",
-            "value": 1899802624
-        },
-        {
-            "time": "2021-08-03T05:26:51.694Z",
-            "value": 1902071808
-        },
-        {
-            "time": "2021-08-03T05:27:51.694Z",
-            "value": 1904300032
-        },
-        {
-            "time": "2021-08-03T05:28:51.694Z",
-            "value": 1906520064
-        },
-        {
-            "time": "2021-08-03T05:29:51.694Z",
-            "value": 1908723712
-        },
-        {
-            "time": "2021-08-03T05:30:51.694Z",
-            "value": 1915133952
-        },
-        {
-            "time": "2021-08-03T05:31:51.694Z",
-            "value": 1917362176
-        },
-        {
-            "time": "2021-08-03T05:32:51.694Z",
-            "value": 1919627264
-        },
-        {
-            "time": "2021-08-03T05:33:51.694Z",
-            "value": 1921830912
-        },
-        {
-            "time": "2021-08-03T05:34:51.694Z",
-            "value": 1924071424
-        },
-        {
-            "time": "2021-08-03T05:35:51.694Z",
-            "value": 1926262784
-        },
-        {
-            "time": "2021-08-03T05:36:51.694Z",
-            "value": 1928523776
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624418816
         }
-    ]
-}
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.148:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-hgfpd",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 66008002560
+        }
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.168:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-69zhl",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624353280
+        }
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.182:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-wgwds",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624418816
+        }
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.19:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-hzx2v",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624418816
+        }
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.208:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-gd86v",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 8141803520
+        }
+    },
+    {
+        "metric": {
+            "name": "node_memory_MemTotal_bytes",
+            "labels": {
+                "container": "node-exporter",
+                "endpoint": "metrics",
+                "instance": "10.182.12.72:9100",
+                "job": "node-exporter",
+                "namespace": "monitoring",
+                "pod": "po-prometheus-node-exporter-z4gr9",
+                "service": "po-prometheus-node-exporter"
+            }
+        },
+        "value": {
+            "time": "2021-08-04T04:36:38.598Z",
+            "value": 16624418816
+        }
+    }
+]
