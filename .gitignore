@@ -3,3 +3,4 @@ build
 a.json
 Jenkinsfile
 Dockerfile
+config.yaml
