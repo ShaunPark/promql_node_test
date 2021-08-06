@@ -7,7 +7,7 @@ class SSH {
 
     constructor(private config: IConfig) { }
 
-    public exec(ipAddress: string, command:string) {
+    public exec(ipAddress: string, command: string) {
         try {
             const sshFile = this.config.ssh.sshPemFile;
             const sshUser = this.config.ssh.sshUser;
@@ -17,7 +17,9 @@ class SSH {
                 conn
                     .on('error', (err) => { Log.error(err) })
                     .on('end', () => { Log.info("[SSH.exec] Connection ended") })
-                    .on('close', () => { Log.info("[SSH.exec] Connection closed") })
+                    .on('close', () => {
+                        Log.info("[SSH.exec] Connection closed")
+                    })
                     .on('ready', () => {
                         Log.debug('[SSH.exec] SShClient ready');
                         try {
@@ -25,14 +27,21 @@ class SSH {
                                 if (err !== undefined) {
                                     Log.error(`[SSH.exec] ${err}`)
                                 }
-                                stream.on('close', (code: any, signal: any) => {
-                                    conn.end();
-                                });
+                                stream
+                                    .on('data', (data: any) => {
+                                        Log.info('STDOUT: ' + data);
+                                    })
+                                    .on('close', (code: any, signal: any) => {
+                                        conn.end();
+                                    }).stderr.on('data', (data: any) => {
+                                        Log.info('STDERR: ' + data);
+                                    })
                             });
                         } catch (err) {
                             Log.error(`[SSH.exec] ${err}-`)
                         }
                     })
+
                     .connect({
                         host: ipAddress,
                         port: 22,

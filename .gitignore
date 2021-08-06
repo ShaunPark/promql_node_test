@@ -5,3 +5,4 @@ Jenkinsfile
 Dockerfile
 config.yaml
 config.prom.yaml
+b.json

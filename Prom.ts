@@ -1,9 +1,13 @@
 import { PrometheusDriver, RangeVector } from "prometheus-query"
 import ConfigManager from "./utils/ConfigManager";
 import { parse } from "ts-command-line-args"
-import IConfig from "./types/Type";
+import IConfig, { DropCondition, MemoryCache } from "./types/Type";
 import Log from "./utils/Logger";
 import SSH from "./utils/SSH";
+import ESLogger from "./elasticsearch/ESLogger";
+import { percent } from "./utils/Util";
+import PrometheusDataCollector from "./dataCollector/PrometheusDataCollector";
+import { DataCollector } from "./dataCollector/DateCollector";
 
 
 const bytesToSize = (bytes: number): string => {
@@ -16,113 +20,104 @@ const bytesToSize = (bytes: number): string => {
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
 }
-const average = (arr: number[]) => arr.reduce((p, c) => p + c, 0) / arr.length;
-const percent = (child: number, parent: number) => ((child / parent) * 100).toFixed(2);
+const COMMAND_FOR_ALL_DROP = "echo 3 > /proc/sys/vm/drop_caches"
+const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
+const ONE_MINIUTE_MILLISEC = 60000
 
-class PromTest {
-    private prom
-    private configManager: ConfigManager
+class MemoryMonitor {
     private nodes: Map<string, MemoryCache> = new Map()
 
-    constructor(configFile: string) {
-        try {
-            this.configManager = new ConfigManager(configFile);
-            const config: IConfig = this.configManager.config;
+    constructor(private configManager: ConfigManager) {}
 
-            Log.info(`[PromTest] load config from ${configFile}`)
+    main = async (dataCollector:DataCollector) => {
+        await ESLogger.init(this.configManager)
 
-            let url = config.prometheus.url.trim()
-            if (!url.startsWith("http://")) {
-                url = `http://${url}`
-            }
-            this.prom = new PrometheusDriver({
-                endpoint: url,
-                baseURL: "/api/v1" // default value
-            })
-        } catch (err) {
-            Log.error(err)
-            process.exit(1);
-        }
-    }
-
-    main = () => {
         setInterval(async () => {
             const config = this.configManager.config
-            await this.getTotalMemory(this.prom, this.nodes)
-            await this.getCacheMemory(this.prom, this.nodes)
+            await dataCollector.getTotalMemory(this.nodes)
+            await dataCollector.getCacheMemory(this.nodes)
             this.judgeMemoryUsage(config, this.nodes)
             this.printCurrentStatus(this.nodes)
         }, this.configManager.config.processInterval)
     }
 
-    getCacheMemory = async (client: PrometheusDriver, nodes: Map<string, MemoryCache>) => {
-        const q = 'node_memory_Cached_bytes + node_memory_Buffers_bytes'
 
-        const now = Date.now()
-        const start = now - 1 * 60 * 1000
-        const end = now
-        const step = 60
-
-        const result = (await client.rangeQuery(q, start, end, step)).result as RangeResult[]
-
-        result.forEach(({ metric, values }) => {
-            const avg = average(values.map(({ value }) => value))
-            const ipAddr = metric.labels.instance.split(":", 2)
-
-            const info = nodes.get(ipAddr[0])
-            if (info !== undefined) {
-                const diff = (info.bufferMem == -1) ? 0 : avg - info.bufferMem
-                nodes.set(ipAddr[0], { ...info, bufferMem: avg, diffMem: diff })
+    processPageDrop = (info: MemoryCache, config: IConfig, condition: DropCondition, cmd: string) => {
+        const msg = `${info.nodeIp} Buffer usage is over ${condition.ratio}% and has continued more than ${condition.duration} minutes. `
+        Log.info(msg)
+        ESLogger.info(info.nodeIp, msg)
+        if (config.dryRun) {
+            Log.info(`DryRun is enabled. Drop execution skipped. `)
+        } else {
+            try {
+                const ssh = new SSH(config)
+                ssh.exec(info.nodeIp, COMMAND_FOR_ALL_DROP)
+            } catch (err) {
+                Log.error(err)
+                ESLogger.error(info.nodeIp, err)
             }
-        })
+        }
     }
 
     judgeMemoryUsage = (config: IConfig, nodes: Map<string, MemoryCache>) => {
         const now = Date.now()
         Array.from(nodes).forEach(([_, info]) => {
+            // buffer 메모리 사용율
             const usage = info.bufferMem / info.totalMem * 100
-
+            // 해당 노드에서 page drop 을 위한 조건이 유지된 시간.
             const pageDuration = (info.pageOverStartedTime !== 0) ? now - info.pageOverStartedTime : 0
+            // 해당 노드에서 전체 cache drop을 위한 조건이 유지된 시간.
             const allDuration = (info.allOverStartTime !== 0) ? now - info.allOverStartTime : 0
-
+            // 전체 cache drop을 위한 조건 설정값.
             const allDrop = config.ratioForAllDrop
+            // page drop을 위한 조건 설정값.
             const pageCacheDrop = config.ratioForPageCacheDrop
 
-            if (usage > allDrop.ratio) {
-                console.log(`${info.nodeIp} over ${allDrop.ratio} `)
-                if (info.allOverStartTime == 0) {
-                    if (info.pageOverStartedTime == 0) {
-                        nodes.set(info.nodeIp, { ...info, allOverStartTime: now, pageOverStartedTime: now, pageDrop: true, allDrop: true })
-                    } else {
-                        nodes.set(info.nodeIp, { ...info, allOverStartTime: now, allDrop: true })
+            if (usage >= pageCacheDrop.ratio) {
+                let newInfo = undefined
+                let actionTime = undefined
+                if (usage >= allDrop.ratio) {
+                    Log.info(`${info.nodeIp} over ${allDrop.ratio}% `)
+                    if (!info.allDrop) {
+                        if (info.pageDrop) { // case 3
+                            newInfo = { allOverStartTime: now, allDrop: true }
+                        } else {  // case 2
+                            newInfo = { allOverStartTime: now, allDrop: true, pageOverStartedTime: now, pageDrop: true }
+                        }
+                    }
+                } else {
+                    Log.info(`${info.nodeIp} over ${pageCacheDrop.ratio}% `)
+                    if (!info.pageDrop) {
+                        if (info.allDrop) { // case 6
+                            newInfo = { allOverStartTime: 0, allDrop: false }
+                        } else {  //case 1
+                            newInfo = { pageOverStartedTime: now, pageDrop: true }
+                        }
                     }
                 }
-                if (allDuration >= allDrop.duration * 60 * 1000) {
-                    console.log(`${info.nodeIp} Buffer usage is over ${allDrop.ratio}% and has continued more than ${allDrop.duration} minutes. `)
+                nodes.set(info.nodeIp, { ...info, ...newInfo })
+                if (now - info.actionTime > config.actionBuffer * ONE_MINIUTE_MILLISEC) {
+                    if (allDuration >= allDrop.duration * ONE_MINIUTE_MILLISEC) {
+                        // 해당 조건이 발생한 후 유지 시간이 설정된 시간을 초과 했으면 전체 cache drop을 수행함
+                        newInfo = { ...newInfo, actionTime: now }
+                        this.processPageDrop(info, config, allDrop, COMMAND_FOR_ALL_DROP)
+                    } else if (pageDuration >= pageCacheDrop.duration * ONE_MINIUTE_MILLISEC) {
+                        // 해당 조건이 발생한 후 유지 시간이 설정된 시간을 초과 했으면 page drop을 수행함
+                        newInfo = { ...newInfo, actionTime: now }
+                        this.processPageDrop(info, config, pageCacheDrop, COMMAND_FOR_PAGE_DROP)
+                    } else if (info.actionTime !== 0) {
+                        newInfo = { ...newInfo, actionTime: 0 }
+                    }
+                }
 
-                    if (config.dryRun) {
-                        console.log(`DryRun is enabled. Drop execution skipped. `)
-                    } else {
-                        const ssh = new SSH(config)
-                        ssh.exec(info.nodeIp, `echo 3 > /proc/sys/vm/drop_caches`)
-                    }
-                }
-            } else if (usage > pageCacheDrop.ratio) {
-                console.log(`${info.nodeIp} over ${pageCacheDrop.ratio} `)
-                if (info.pageOverStartedTime == 0) {
-                    nodes.set(info.nodeIp, { ...info, pageOverStartedTime: now, allOverStartTime: 0, pageDrop: true, allDrop: false })
-                }
-                if (pageDuration >= pageCacheDrop.duration * 60 * 1000) {
-                    console.log(`${info.nodeIp} Buffer usage is over ${pageCacheDrop.ratio}% and has continued more than ${pageCacheDrop.duration} minutes. `)
-                    if (config.dryRun) {
-                        console.log(`DryRun is enabled. Drop execution skipped. `)
-                    } else {
-                        const ssh = new SSH(config)
-                        ssh.exec(info.nodeIp, `echo 1 > /proc/sys/vm/drop_caches`)
-                    }
-                }
+                nodes.set(info.nodeIp, { ...info, ...newInfo })
             } else {
-                nodes.set(info.nodeIp, { ...info, pageOverStartedTime: 0, allOverStartTime: 0, pageDrop: false, allDrop: false })
+                if (info.allDrop) { // case 7
+                    nodes.set(info.nodeIp, { ...info, allOverStartTime: 0, allDrop: false, pageOverStartedTime: 0, pageDrop: false })
+                } else if (info.pageDrop) { // case 5
+                    nodes.set(info.nodeIp, { ...info, pageOverStartedTime: 0, pageDrop: false })
+                }
+
             }
         })
     }
@@ -149,45 +144,8 @@ class PromTest {
         }))
     }
 
-    getTotalMemory = async (client: PrometheusDriver, nodes: Map<string, MemoryCache>) => {
-        const q = 'node_memory_MemTotal_bytes'
-        const result = await (await client.instantQuery(q)).result as InstantResult[]
-
-
-        result.forEach(metric => {
-            const instanceStr = metric.metric.labels["instance"]
-            if (instanceStr !== undefined) {
-                const ipAddr = instanceStr.split(":", 2)
-                const info = nodes.get(ipAddr[0])
-                if (info === undefined) {
-                    nodes.set(ipAddr[0], { nodeIp: ipAddr[0], totalMem: metric.value.value, bufferMem: -1, pageOverStartedTime: 0, allOverStartTime: 0, pageDrop: false, allDrop: false, diffMem: 0 })
-                } else {
-                    nodes.set(ipAddr[0], { ...info, totalMem: metric.value.value })
-                }
-            }
-        })
-    }
 }
 
-type MemoryCache = {
-    nodeIp: string,
-    totalMem: number,
-    bufferMem: number,
-    pageOverStartedTime: number,
-    allOverStartTime: number,
-    allDrop: boolean,
-    pageDrop: boolean,
-    diffMem: number
-}
-
-type InstantResult = {
-    metric: { name: string, labels: { [key: string]: string } },
-    value: { time: Date, value: number }
-}
-type RangeResult = {
-    metric: { name: string, labels: { [key: string]: string } },
-    values: Array<{ time: Date, value: number }>
-}
 interface IArguments {
     configFile: string
 }
@@ -195,5 +153,9 @@ interface IArguments {
 const args = parse<IArguments>({
     configFile: { type: String, alias: 'f', defaultValue: "config.yaml" }
 })
-const promMon = new PromTest(args.configFile);
-promMon.main()
+
+const configManager = new ConfigManager(args.configFile);
+const promMon = new MemoryMonitor(configManager)
+const dataCollector = new PrometheusDataCollector(configManager.config)
+
+promMon.main(dataCollector)
