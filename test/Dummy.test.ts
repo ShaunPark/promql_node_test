@@ -1,15 +1,16 @@
+import { Executor } from "../excutor/Excutor"
+import { MemoryMonitor } from "../MemoryMonitor"
 import ConfigManager from "../utils/ConfigManager"
-import SSH from "../utils/SSH"
+import { DummyDataCollector, DummyLogger } from "./DummyDataCollector"
 
-class Test {
-    run = () => {
-        const cmg = new ConfigManager("./config.prom.yaml")
-        const s = new SSH(cmg.config)
-
-        s.exec("54.180.196.105", "export A=`date`; echo $A >> /home/ubuntu/a.out")
+class DummyExecutor implements Executor {
+    exec = (ipAddress: string, command: string) => {
+        console.log( `${ipAddress} - ${command}`)
     }
+    
 }
-
-
-const t = new Test()
-t.run()
+new MemoryMonitor(
+    new ConfigManager("./config.prom.yaml"),
+    new DummyLogger(),
+    new DummyExecutor(),
+).main(new DummyDataCollector())

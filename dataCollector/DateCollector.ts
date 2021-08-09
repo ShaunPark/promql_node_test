@@ -1,7 +1,8 @@
-import { PrometheusDriver } from "prometheus-query";
-import { MemoryCache } from "../types/Type";
-
+export type CacheMemory = {
+    ipAddress:string,
+    memoryUsage:number
+}
 export interface DataCollector {
-    getCacheMemory: (nodes: Map<string, MemoryCache>) => Promise<void>
-    getTotalMemory: (nodes: Map<string, MemoryCache>) => Promise<void>
+    getCacheMemory: () => Promise<Array<CacheMemory>>
+    getTotalMemory: () => Promise<Array<CacheMemory>>
 }

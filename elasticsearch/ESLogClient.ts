@@ -1,6 +1,6 @@
 import Log from "../utils/Logger";
-import ConfigManager from "../utils/ConfigManager";
 import { ESClient } from "./ESClient";
+import IConfig from "../types/Type";
 
 export type LogType = {
     clusterName: string
@@ -17,8 +17,8 @@ const mapping = {
 }
 
 export class ESLogClient extends ESClient<LogType> {
-    constructor(configManager: ConfigManager) {
-        const el = configManager.config.elasticSearch;
+    constructor(config: IConfig) {
+        const el = config.elasticSearch;
         if (el !== undefined) {
             const { host, port, memoryIndex } = el
             super(memoryIndex, `http://${host.trim()}:${port}`, mapping, el)

@@ -1,9 +1,10 @@
 import { readFileSync } from 'fs';
 import { Client } from 'ssh2';
 import IConfig from '../types/Type';
-import Log from './Logger'
+import Log from '../utils/Logger'
+import { Executor } from './Excutor';
 
-class SSH {
+class SSH implements Executor {
 
     constructor(private config: IConfig) { }
 

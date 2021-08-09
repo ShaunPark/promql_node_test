@@ -37,10 +37,9 @@ export type MemoryCache = {
     nodeIp: string,
     totalMem: number,
     bufferMem: number,
-    pageOverStartedTime: number,
-    allOverStartTime: number,
-    allDrop: boolean,
-    pageDrop: boolean,
+    currentLevel:number,
+    level_1_Started:number,
+    level_2_Started:number,
     diffMem: number,
     actionTime: number
 }

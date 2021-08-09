@@ -1,7 +1,7 @@
 import { PrometheusDriver } from "prometheus-query";
-import IConfig, { InstantResult, MemoryCache, RangeResult } from "../types/Type";
+import IConfig, { InstantResult, RangeResult } from "../types/Type";
 import { average } from "../utils/Util";
-import { DataCollector } from "./DateCollector";
+import { CacheMemory, DataCollector } from "./DateCollector";
 
 class PrometheusDataCollector implements DataCollector {
     private prom
@@ -16,7 +16,9 @@ class PrometheusDataCollector implements DataCollector {
         })
     }
 
-    getCacheMemory = async (nodes: Map<string, MemoryCache>) => {
+
+
+    getCacheMemory = async ():Promise<Array<CacheMemory>> => {
         const q = 'node_memory_Cached_bytes + node_memory_Buffers_bytes'
 
         const now = Date.now()
@@ -25,35 +27,32 @@ class PrometheusDataCollector implements DataCollector {
         const step = 60
 
         const result = (await this.prom.rangeQuery(q, start, end, step)).result as RangeResult[]
+        const ret = new Array<CacheMemory>() 
 
         result.forEach(({ metric, values }) => {
-            const avg = average(values.map(({ value }) => value))
             const ipAddr = metric.labels.instance.split(":", 2)
 
-            const info = nodes.get(ipAddr[0])
-            if (info !== undefined) {
-                const diff = (info.bufferMem == -1) ? 0 : avg - info.bufferMem
-                nodes.set(ipAddr[0], { ...info, bufferMem: avg, diffMem: diff })
-            }
+            const avg = average(values.map(({ value }) => value))
+            ret.push({ipAddress:ipAddr[0], memoryUsage:avg})
         })
+
+        return Promise.resolve(ret)
     }
 
-    getTotalMemory = async ( nodes: Map<string, MemoryCache>) => {
+    getTotalMemory = async ():Promise<Array<CacheMemory>> => {
         const q = 'node_memory_MemTotal_bytes'
         const result = await (await this.prom.instantQuery(q)).result as InstantResult[]
+        const ret = new Array<CacheMemory>()
 
         result.forEach(metric => {
             const instanceStr = metric.metric.labels["instance"]
             if (instanceStr !== undefined) {
                 const ipAddr = instanceStr.split(":", 2)
-                const info = nodes.get(ipAddr[0])
-                if (info === undefined) {
-                    nodes.set(ipAddr[0], { nodeIp: ipAddr[0], totalMem: metric.value.value, bufferMem: -1, pageOverStartedTime: 0, allOverStartTime: 0, pageDrop: false, allDrop: false, diffMem: 0, actionTime: 0 })
-                } else {
-                    nodes.set(ipAddr[0], { ...info, totalMem: metric.value.value })
-                }
+
+                ret.push({ipAddress:ipAddr[0], memoryUsage:metric.value.value})
             }
         })
+        return Promise.resolve(ret)
     }
 }
 

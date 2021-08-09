@@ -1,22 +1,24 @@
-import ConfigManager from "../utils/ConfigManager"
+import IConfig from "../types/Type";
 import { ESLogClient } from "./ESLogClient"
+import { ExLogger } from "./ExLogger"
 
-class ESLogger {
-    private static client:ESLogClient
-    private static clusterName:string
-    
-    public static async init (cm:ConfigManager) {
-        ESLogger.client = new ESLogClient(cm)
-        ESLogger.clusterName = cm.config.clusterName
+class ESLogger implements ExLogger {
+    private clusterName: string;
+    private client:ESLogClient
+
+    constructor( config: IConfig){
+        this.client = new ESLogClient(config)
+        this.clusterName = config.clusterName
     }
-    public static info(nodeName:string, message:string) {
-        ESLogger.client.putLog({logType:"Info", nodeName:nodeName, message:message, clusterName: ESLogger.clusterName })
+
+    public info(nodeName: string, message: string) {
+        this.client.putLog({ logType: "Info", nodeName: nodeName, message: message, clusterName: this.clusterName })
     }
-    public static error(nodeName:string, message:string) {
-        ESLogger.client.putLog({logType:"Error", nodeName:nodeName, message:message, clusterName: ESLogger.clusterName })
+    public error(nodeName: string, message: string) {
+        this.client.putLog({ logType: "Error", nodeName: nodeName, message: message, clusterName: this.clusterName })
     }
-    public static warn(nodeName:string, message:string) {
-        ESLogger.client.putLog({logType:"Warning", nodeName:nodeName, message:message, clusterName: ESLogger.clusterName })
+    public warn(nodeName: string, message: string) {
+        this.client.putLog({ logType: "Warning", nodeName: nodeName, message: message, clusterName: this.clusterName })
     }
 }
 
