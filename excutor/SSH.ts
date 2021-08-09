@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { Client } from 'ssh2';
 import IConfig from '../types/Type';
 import Log from '../utils/Logger'
-import { Executor } from './Excutor';
+import { Executor } from '../interfaces/Excutor';
 
 class SSH implements Executor {
 

@@ -1,4 +1,4 @@
-import { Executor } from "../excutor/Excutor"
+import { Executor } from "../interfaces/Excutor"
 import { MemoryMonitor } from "../MemoryMonitor"
 import ConfigManager from "../utils/ConfigManager"
 import { DummyDataCollector, DummyLogger } from "./DummyDataCollector"

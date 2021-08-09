@@ -1,6 +1,6 @@
 import IConfig from "../types/Type";
 import { ESLogClient } from "./ESLogClient"
-import { ExLogger } from "./ExLogger"
+import { ExLogger } from "../interfaces/ExLogger"
 
 class ESLogger implements ExLogger {
     private clusterName: string;

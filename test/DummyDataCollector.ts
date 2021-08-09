@@ -1,5 +1,5 @@
-import { CacheMemory, DataCollector } from "../dataCollector/DateCollector";
-import { ExLogger } from "../elasticsearch/ExLogger";
+import { CacheMemory, DataCollector } from "../interfaces/DateCollector";
+import { ExLogger } from "../interfaces/ExLogger";
 
 
 const temp:number[] = [

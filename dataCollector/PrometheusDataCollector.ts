@@ -1,7 +1,7 @@
 import { PrometheusDriver } from "prometheus-query";
 import IConfig, { InstantResult, RangeResult } from "../types/Type";
 import { average } from "../utils/Util";
-import { CacheMemory, DataCollector } from "./DateCollector";
+import { CacheMemory, DataCollector } from "../interfaces/DateCollector";
 
 class PrometheusDataCollector implements DataCollector {
     private prom

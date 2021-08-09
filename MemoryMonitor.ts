@@ -1,22 +1,11 @@
 import ConfigManager from "./utils/ConfigManager";
 import IConfig, { DropCondition, MemoryCache } from "./types/Type";
 import Log from "./utils/Logger";
-import SSH from "./excutor/SSH";
-import { percent } from "./utils/Util";
-import { DataCollector } from "./dataCollector/DateCollector";
-import { ExLogger } from "./elasticsearch/ExLogger";
-import { Executor } from "./excutor/Excutor";
+import { percent, bytesToSize } from "./utils/Util";
+import { DataCollector } from "./interfaces/DateCollector";
+import { ExLogger } from "./interfaces/ExLogger";
+import { Executor } from "./interfaces/Excutor";
 
-const bytesToSize = (bytes: number): string => {
-    if (bytes <= 0) return '0B';
-
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
-}
 const COMMAND_FOR_ALL_DROP = "echo 3 > /proc/sys/vm/drop_caches"
 const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
 
@@ -25,11 +14,7 @@ export class MemoryMonitor {
 
     constructor(private configManager: ConfigManager, private exLogger: ExLogger, private executor:Executor) { }
 
-    printConfig = (config: IConfig) => {
-        console.table(config, ["duration", "ratio"])
-    }
     main = async (dataCollector: DataCollector) => {
-        this.printConfig(this.configManager.config)
         setInterval(async () => {
             const config = this.configManager.config
             await this.getTotalMemory(this.nodes, dataCollector)
