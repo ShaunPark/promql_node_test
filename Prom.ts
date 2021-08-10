@@ -17,5 +17,6 @@ const configManager = new ConfigManager(args.configFile);
 const config = configManager.config
 const esLogger = new ESLogger(config)
 const dataCollector = new PrometheusDataCollector(config)
+// dataCollector.getCacheMemory().then(r => console.log(r))
 const executor = new SSH(config)
 new MemoryMonitor(configManager, esLogger, executor).main(dataCollector)
