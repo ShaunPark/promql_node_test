@@ -10,7 +10,7 @@ interface IArguments {
 }
 
 const args = parse<IArguments>({
-    configFile: { type: String, alias: 'f', defaultValue: "config.prom.yaml" }
+    configFile: { type: String, alias: 'f', defaultValue: "config.mem.yaml" }
 })
 
 const configManager = new ConfigManager(args.configFile);

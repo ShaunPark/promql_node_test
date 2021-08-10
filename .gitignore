@@ -3,6 +3,5 @@ build
 a.json
 Jenkinsfile
 Dockerfile
-config.yaml
-config.prom.yaml
+config.mem.yaml
 b.json

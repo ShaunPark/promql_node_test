@@ -54,7 +54,7 @@ class SSH implements Executor {
                 Log.info(`[SSH.exec]cert file for ssh path is not defined in config file.`)
             }
         } catch (err) {
-            console.error(`[SSH.exec]Fail to exec ${ipAddress} - ${command}.`, err)
+            console.error(`[SSH.exec]Fail to exec ${ipAddress} - "${command}".`, err)
             throw err
         }
     }

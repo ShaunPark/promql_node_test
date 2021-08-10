@@ -145,18 +145,18 @@ export class MemoryMonitor {
                 diffStr = "0B"
             }
             return {
-                // nodeIp: info.nodeIp,
-                // totolMem: bytesToSize(info.totalMem),
-                // bufferMem: bytesToSize(info.bufferMem),
+                nodeIp: info.nodeIp,
+                totolMem: bytesToSize(info.totalMem),
+                bufferMem: bytesToSize(info.bufferMem),
                 percent: `${percent(info.bufferMem, info.totalMem)}%`,
                 now: new Date().toLocaleTimeString(),
                 level: info.currentLevel,
-                actionTime: (info.actionTime != 0) ? new Date(info.actionTime).toLocaleTimeString() : "--",
-                minNext: (info.actionTime != 0) ? new Date(info.actionTime + config.actionBuffer).toLocaleTimeString() : "--",
-                PageStart: (info.level_1_Started != 0) ? new Date(info.level_1_Started).toLocaleTimeString() : "--",
-                fireTime: (info.level_1_Started != 0) ? new Date(info.level_1_Started + config.ratioForPageCacheDrop.duration).toLocaleTimeString() : "--",
-                AllStart: (info.level_2_Started != 0) ? new Date(info.level_2_Started).toLocaleTimeString() : "--",
-                AllTime: (info.level_2_Started != 0) ? new Date(info.level_2_Started + config.ratioForAllDrop.duration).toLocaleTimeString() : "--"
+                // actionTime: (info.actionTime != 0) ? new Date(info.actionTime).toLocaleTimeString() : "--",
+                // minNext: (info.actionTime != 0) ? new Date(info.actionTime + config.actionBuffer).toLocaleTimeString() : "--",
+                // PageStart: (info.level_1_Started != 0) ? new Date(info.level_1_Started).toLocaleTimeString() : "--",
+                // fireTime: (info.level_1_Started != 0) ? new Date(info.level_1_Started + config.ratioForPageCacheDrop.duration).toLocaleTimeString() : "--",
+                // AllStart: (info.level_2_Started != 0) ? new Date(info.level_2_Started).toLocaleTimeString() : "--",
+                // AllTime: (info.level_2_Started != 0) ? new Date(info.level_2_Started + config.ratioForAllDrop.duration).toLocaleTimeString() : "--"
             }
         }))
     }
