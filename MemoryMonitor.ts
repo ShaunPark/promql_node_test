@@ -5,7 +5,7 @@ import { percent, bytesToSize } from "./utils/Util";
 import { DataCollector } from "./interfaces/DateCollector";
 import { ExLogger } from "./interfaces/ExLogger";
 import { Executor } from "./interfaces/Excutor";
-import  axios from 'axios'
+import axios from 'axios'
 
 const COMMAND_FOR_ALL_DROP = "echo 3 > /proc/sys/vm/drop_caches"
 const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
@@ -143,8 +143,9 @@ export class MemoryMonitor {
     getTargetNodes = async () => {
         try {
             const ret = await axios.get('http://localhost:8080/nodes')
-            Log.info(JSON.stringify(ret))
-        }catch(err) {
+            console.log(ret.data)
+            Log.info(JSON.stringify(ret.data))
+        } catch (err) {
             Log.error(JSON.stringify(err))
         }
     }
