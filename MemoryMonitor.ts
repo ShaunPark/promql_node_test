@@ -5,6 +5,7 @@ import { percent, bytesToSize } from "./utils/Util";
 import { DataCollector } from "./interfaces/DateCollector";
 import { ExLogger } from "./interfaces/ExLogger";
 import { Executor } from "./interfaces/Excutor";
+import  axios from 'axios'
 
 const COMMAND_FOR_ALL_DROP = "echo 3 > /proc/sys/vm/drop_caches"
 const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
@@ -12,15 +13,20 @@ const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
 export class MemoryMonitor {
     private nodes: Map<string, MemoryCache> = new Map()
 
-    constructor(private configManager: ConfigManager, private exLogger: ExLogger, private executor:Executor) { }
+    constructor(private configManager: ConfigManager, private exLogger: ExLogger, private executor: Executor) { }
 
     main = async (dataCollector: DataCollector) => {
         setInterval(async () => {
-            const config = this.configManager.config
-            await this.getTotalMemory(this.nodes, dataCollector)
-            await this.getCacheMemery(this.nodes, dataCollector)
-            this.judgeMemoryUsage(config, this.nodes)
-            this.printCurrentStatus(this.nodes, config)
+            try {
+                await this.getTargetNodes()
+                const config = this.configManager.config
+                await this.getTotalMemory(this.nodes, dataCollector)
+                await this.getCacheMemery(this.nodes, dataCollector)
+                this.judgeMemoryUsage(config, this.nodes)
+                this.printCurrentStatus(this.nodes, config)
+            } catch (err) {
+                Log.error(JSON.stringify(err))
+            }
         }, this.configManager.config.processInterval)
     }
 
@@ -132,6 +138,15 @@ export class MemoryMonitor {
 
             nodes.set(newInfo.nodeIp, newInfo)
         })
+    }
+
+    getTargetNodes = async () => {
+        try {
+            const ret = await axios.get('http://localhost:8080/nodes')
+            Log.info(JSON.stringify(ret))
+        }catch(err) {
+            Log.error(JSON.stringify(err))
+        }
     }
 
     printCurrentStatus = (nodes: Map<string, MemoryCache>, config: IConfig) => {

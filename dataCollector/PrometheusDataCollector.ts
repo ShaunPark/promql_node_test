@@ -2,10 +2,11 @@ import { PrometheusDriver } from "prometheus-query";
 import IConfig, { InstantResult, RangeResult } from "../types/Type";
 import { average } from "../utils/Util";
 import { CacheMemory, DataCollector } from "../interfaces/DateCollector";
+import Log from "../utils/Logger";
 
 class PrometheusDataCollector implements DataCollector {
     private prom
-    constructor(config:IConfig) {
+    constructor(config: IConfig) {
         let url = config.prometheus.url.trim()
         if (!url.startsWith("http://")) {
             url = `http://${url}`
@@ -18,7 +19,7 @@ class PrometheusDataCollector implements DataCollector {
 
 
 
-    getCacheMemory = async ():Promise<Array<CacheMemory>> => {
+    getCacheMemory = async (): Promise<Array<CacheMemory>> => {
         const q = 'node_memory_Cached_bytes + node_memory_Buffers_bytes'
 
         const now = Date.now()
@@ -27,32 +28,37 @@ class PrometheusDataCollector implements DataCollector {
         const step = 60
 
         const result = (await this.prom.rangeQuery(q, start, end, step)).result as RangeResult[]
-        const ret = new Array<CacheMemory>() 
+        const ret = new Array<CacheMemory>()
 
         result.forEach(({ metric, values }) => {
             const ipAddr = metric.labels.instance.split(":", 2)
 
             const avg = average(values.map(({ value }) => value))
-            ret.push({ipAddress:ipAddr[0], memoryUsage:avg})
+            ret.push({ ipAddress: ipAddr[0], memoryUsage: avg })
         })
 
         return Promise.resolve(ret)
     }
 
-    getTotalMemory = async ():Promise<Array<CacheMemory>> => {
-        const q = 'node_memory_MemTotal_bytes'
-        const result = await (await this.prom.instantQuery(q)).result as InstantResult[]
-        const ret = new Array<CacheMemory>()
+    getTotalMemory = async (): Promise<Array<CacheMemory>> => {
+        try {
+            const q = 'node_memory_MemTotal_bytes'
+            const result = await (await this.prom.instantQuery(q)).result as InstantResult[]
+            const ret = new Array<CacheMemory>()
 
-        result.forEach(metric => {
-            const instanceStr = metric.metric.labels["instance"]
-            if (instanceStr !== undefined) {
-                const ipAddr = instanceStr.split(":", 2)
+            result.forEach(metric => {
+                const instanceStr = metric.metric.labels["instance"]
+                if (instanceStr !== undefined) {
+                    const ipAddr = instanceStr.split(":", 2)
 
-                ret.push({ipAddress:ipAddr[0], memoryUsage:metric.value.value})
-            }
-        })
-        return Promise.resolve(ret)
+                    ret.push({ ipAddress: ipAddr[0], memoryUsage: metric.value.value })
+                }
+            })
+            return Promise.resolve(ret)
+        } catch(err) {
+            Log.error(JSON.stringify(err))
+            return Promise.reject(err)
+        }
     }
 }
 
