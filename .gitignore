@@ -1,7 +1,5 @@
 node_modules
 build
 a.json
-Jenkinsfile
-Dockerfile
 config.mem.yaml
 b.json
