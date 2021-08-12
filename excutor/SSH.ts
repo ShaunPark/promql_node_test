@@ -42,7 +42,6 @@ class SSH implements Executor {
                             Log.error(`[SSH.exec] ${err}-`)
                         }
                     })
-
                     .connect({
                         host: ipAddress,
                         port: 22,

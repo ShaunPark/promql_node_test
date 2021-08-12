@@ -10,3 +10,26 @@ export const bytesToSize = (bytes: number): string => {
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
 }
+export const betweenTimes = (target: Date, from: Date, to: Date): boolean =>{
+    const stTime = new Date(target)
+    stTime.setHours(from.getHours(), from.getMinutes(), from.getSeconds(), 0)
+    const edTime = new Date(target)
+    edTime.setHours(to.getHours(), to.getMinutes(), to.getSeconds(), 0)
+
+    return stTime.getTime() < target.getTime() && edTime.getTime() > target.getTime()
+}
+
+export function parseTimeStr(str: string): Date {
+    const tempDt = new Date("2021-07-20T" + str.trim())
+    const dt = new Date()
+    dt.setHours(tempDt.getHours(), tempDt.getMinutes(), 0, 0)
+    return dt
+}
+
+export function timeStrToDate(timeStr: string, def: string): Date {
+    try {
+        return parseTimeStr(timeStr)
+    } catch (err) {
+        return parseTimeStr(def)
+    }
+}

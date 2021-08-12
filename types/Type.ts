@@ -7,7 +7,9 @@ export default interface IConfig {
     elasticSearch: IElasticSearch
     prometheus: IPrometheus
     ssh: ISSH
-    clusterName:string
+    clusterName: string
+    swapOffStartTime: string
+    swapOffEndTime: string
 }
 
 export interface IElasticSearch {
@@ -22,6 +24,7 @@ export interface IElasticSearch {
 export interface ISSH {
     sshPemFile: string
     sshUser: string
+    useIpAddress: boolean
 }
 
 export interface DropCondition {
@@ -31,15 +34,17 @@ export interface DropCondition {
 
 export interface IPrometheus {
     url: string
+    nodeSelector: string
 }
 
 export type MemoryCache = {
-    nodeIp: string,
+    ipAddress: string,
+    nodeName: string,
     totalMem: number,
     bufferMem: number,
-    currentLevel:number,
-    level_1_Started:number,
-    level_2_Started:number,
+    currentLevel: number,
+    level_1_Started: number,
+    level_2_Started: number,
     diffMem: number,
     actionTime: number
 }
