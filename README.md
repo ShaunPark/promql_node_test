@@ -5,15 +5,13 @@
 ```
   dryRun: true
   actionBuffer: 300000
+  processInterval: 60000
   ratioForPageCacheDrop: 
     duration: 600000
     ratio: 50
   ratioForAllDrop: 
     duration: 300000
     ratio: 70
-  processInterval: 60000
-  swapOffStartTime: "02:30+09:00"
-  swapOffEndTime: "02:40+09:00"
   elasticSearch: 
     host: 10.0.0.2
     port: 9200
@@ -26,6 +24,10 @@
     sshPemFile: "/home/ShaunPark/my.pem"
     sshUser: "ubuntu"
     useIpAddress: true
+  swapOffOn:
+    enabled: true
+    startTime: "02:30+09:00"
+    endTime: "02:40+09:00"    
 ```
   - dryRun: 실제 drop 작업 실행 여부. true이면 모니터링만 하고 실제 drop작업을 실행하지 않음
   - actionBuffer: drop 작업 실행 후에 다음 drop 작업까지의 최소 시간. 노드별로 계산됨. 밀리초 단위
@@ -36,8 +38,6 @@
     - duration:  이 시간동안 아래 비율이상의 swap/cache 메모리가 사용되면 page cache 및 inode drop을 수행. 밀리초 단위
     - ratio: drop 작업 실행 조건. 퍼센트로 표시
   - processInterval: 메모리 확인 주기. 밀리초 단위. 1분(60000) 권장
-  - swapOffStartTime: 주기적으로 swap을 껐다 키는 작업 시간대 시작 시각. 예시) "02:30+09:00"
-  - swapOffEndTime:  주기적으로 swap을 껐다 키는 작업 시간대 종료 시각. 예시) "02:40+09:00"
   - elasticSearch: elastic search에 로그를 남기기 위한 정보
     - host: host 명 혹은 ip 주소
     - port: 포트 번호
@@ -52,4 +52,7 @@
     - sshPemFile: ssh 접속을 위한 pem key파일 위치
     - sshUser: ssh 접속을 위한 아이디
     - useIpAddress: ip주소로 접속할 것인지 여부, false이면 노드명으로 접속시도.
-
+  - swapOffOn
+    - enabled : true 이면 매일 지정된 시간에 대상 노드들에 대해서 swap off / on  수행
+    - swapOffStartTime: 주기적으로 swap을 껐다 키는 작업 시간대 시작 시각. 예시) "02:30+09:00"
+    - swapOffEndTime:  주기적으로 swap을 껐다 키는 작업 시간대 종료 시각. 예시) "02:40+09:00

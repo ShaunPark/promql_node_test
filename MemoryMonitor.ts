@@ -34,7 +34,9 @@ export class MemoryMonitor {
                 await this.getCacheMemery(nodes, dataCollector)
                 this.judgeMemoryUsage(nodes, config)
                 this.printCurrentStatus(nodes, config)
-                this.swapOffAndOn(nodes, config)
+                if( config.swapOffOn.enabled ) {
+                    this.swapOffAndOn(nodes, config)
+                }
             } catch (err) {
                 Log.error(JSON.stringify(err))
             }
@@ -78,8 +80,8 @@ export class MemoryMonitor {
     * @returns swap off/on 작업 시간인지 여부 
     */
     private isSwapOffTime = (config: IConfig): boolean => {
-        const swapStartTime = util.timeStrToDate(config.swapOffStartTime, "02:30+09:00")
-        const swapEndTime = util.timeStrToDate(config.swapOffEndTime, "02:50+09:00")
+        const swapStartTime = util.timeStrToDate(config.swapOffOn.startTime, "02:30+09:00")
+        const swapEndTime = util.timeStrToDate(config.swapOffOn.endTime, "02:50+09:00")
 
         const ret = util.betweenTimes(new Date(), swapStartTime, swapEndTime)
         Log.debug(`[MemoryMonitor.isSwapOffTime] isSwapOffTime : ${ret}`)

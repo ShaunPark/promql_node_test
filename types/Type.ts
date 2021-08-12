@@ -8,10 +8,14 @@ export default interface IConfig {
     prometheus: IPrometheus
     ssh: ISSH
     clusterName: string
-    swapOffStartTime: string
-    swapOffEndTime: string
+    swapOffOn:ISwap
 }
 
+export interface ISwap {
+    enabled: boolean
+    startTime: string
+    endTime: string
+}
 export interface IElasticSearch {
     host: string
     port: number
