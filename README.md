@@ -35,7 +35,7 @@
   - ratioForAllDrop: Page cache와 inode를 모두 drop하는 조건  
     - duration:  이 시간동안 아래 비율이상의 swap/cache 메모리가 사용되면 page cache 및 inode drop을 수행. 밀리초 단위
     - ratio: drop 작업 실행 조건. 퍼센트로 표시
-  - processInterval: 메모리 확인 주기. 밀리초 단위. 1분(600000) 권장
+  - processInterval: 메모리 확인 주기. 밀리초 단위. 1분(60000) 권장
   - swapOffStartTime: 주기적으로 swap을 껐다 키는 작업 시간대 시작 시각. 예시) "02:30+09:00"
   - swapOffEndTime:  주기적으로 swap을 껐다 키는 작업 시간대 종료 시각. 예시) "02:40+09:00"
   - elasticSearch: elastic search에 로그를 남기기 위한 정보
