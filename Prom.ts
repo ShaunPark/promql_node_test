@@ -3,7 +3,7 @@ import ESLogger from "./elasticsearch/ESLogger";
 import PrometheusDataCollector from "./dataCollector/PrometheusDataCollector";
 import ConfigManager from "./utils/ConfigManager";
 import { MemoryMonitor } from "./MemoryMonitor";
-import SSH from "./excutor/SSH";
+import SSH from "./executor/SSH";
 
 interface IArguments {
     configFile: string
