@@ -34,7 +34,7 @@ export class MemoryMonitor {
                 await this.getCacheMemery(nodes, dataCollector)
                 this.judgeMemoryUsage(nodes, config)
                 this.printCurrentStatus(nodes, config)
-                if( config.swapOffOn.enabled ) {
+                if (config.swapOffOn.enabled) {
                     this.swapOffAndOn(nodes, config)
                 }
             } catch (err) {
@@ -54,7 +54,7 @@ export class MemoryMonitor {
     swapOffAndOn = (nodes: Map<string, MemoryCache>, config: IConfig) => {
         if (this.isSwapOffTime(config)) {
             if (!this.swapOffed) {
-                Array.from(nodes).map(([_, info]) => {
+                Array.from(nodes).forEach(([_, info]) => {
                     if (config.dryRun) {
                         Log.info(`[MemoryMonitor.swapOffAndOn] DryRun is enabled. Swap off/on skipped. `)
                     } else {
@@ -104,7 +104,14 @@ export class MemoryMonitor {
                 nodes.set(nodeName, { ...info, totalMem: memoryUsage })
             }
         })
-
+        // 모니터링 정보중에 사라졌으면 삭제
+        const nodeNames = ret.map(node => node.nodeName)
+        Array.from(nodes)
+            .map(([key, node]) => node.nodeName)
+            .filter(nodeName => !nodeNames.includes(nodeName))
+            .forEach(nodeName => {
+                nodes.delete(nodeName)
+            })
     }
 
     /**
@@ -184,7 +191,7 @@ export class MemoryMonitor {
                     newInfo.level_1_Started = now
                 }
                 newInfo.currentLevel = 1
-            } else { 
+            } else {
                 // 현재 조건이 레벨 0일때의 작업 수행
                 if (newInfo.currentLevel == 2) {
                     newInfo.level_2_Started = 0
