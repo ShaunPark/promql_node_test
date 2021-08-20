@@ -107,7 +107,7 @@ export class MemoryMonitor {
         // 모니터링 정보중에 사라졌으면 삭제
         const nodeNames = ret.map(node => node.nodeName)
         Array.from(nodes)
-            .map(([key, node]) => node.nodeName)
+            .map(([_, node]) => node.nodeName)
             .filter(nodeName => !nodeNames.includes(nodeName))
             .forEach(nodeName => {
                 nodes.delete(nodeName)
