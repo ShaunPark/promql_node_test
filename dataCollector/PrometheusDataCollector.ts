@@ -1,5 +1,5 @@
 import { PrometheusDriver } from "prometheus-query";
-import IConfig, { InstantResult, RangeResult } from "../types/Type";
+import IConfig, { InstantResult } from "../types/Type";
 import { CacheMemory, DataCollector } from "../interfaces/DateCollector";
 import Log from "../utils/Logger";
 

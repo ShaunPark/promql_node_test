@@ -8,7 +8,7 @@ export default interface IConfig {
     prometheus: IPrometheus
     ssh: ISSH
     clusterName: string
-    swapOffOn:ISwap
+    swapOffOn: ISwap
 }
 
 export interface ISwap {
@@ -31,7 +31,7 @@ export interface ISSH {
     useIpAddress: boolean
 }
 
-export interface DropCondition {
+export type DropCondition = {
     ratio: number
     duration: number
 }
@@ -47,8 +47,7 @@ export type MemoryCache = {
     totalMem: number,
     bufferMem: number,
     currentLevel: number,
-    level_1_Started: number,
-    level_2_Started: number,
+    level_Started: Array<number>
     diffMem: number,
     actionTime: number
 }

@@ -6,8 +6,9 @@ import { DataCollector } from "./interfaces/DateCollector";
 import { ExLogger } from "./interfaces/ExLogger";
 import { Executor } from "./interfaces/Excutor";
 
-const COMMAND_FOR_ALL_DROP = "echo 3 > /proc/sys/vm/drop_caches"
-const COMMAND_FOR_PAGE_DROP = "echo 1 > /proc/sys/vm/drop_caches"
+const ALL_DROP = 1
+const PAGE_DROP = 0
+const COMMANDS_FOR_DROP = ["echo 1 > /proc/sys/vm/drop_caches", "echo 3 > /proc/sys/vm/drop_caches"]
 const COMMAND_SWAP_OFFON = "swapoff -a && swapon -a"
 
 export class MemoryMonitor {
@@ -99,7 +100,7 @@ export class MemoryMonitor {
         ret.forEach(({ ipAddress, memoryUsage, nodeName }) => {
             const info = nodes.get(nodeName)
             if (info === undefined) {
-                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_1_Started: 0, level_2_Started: 0, currentLevel: 0, diffMem: 0, actionTime: 0 })
+                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0 })
             } else {
                 nodes.set(nodeName, { ...info, totalMem: memoryUsage })
             }
@@ -166,38 +167,37 @@ export class MemoryMonitor {
     judgeMemoryUsage = (nodes: Map<string, MemoryCache>, config: IConfig) => {
         const now = Date.now()
         // 전체 cache drop을 위한 조건 설정값.
-        const allDrop = config.ratioForAllDrop
         // page drop을 위한 조건 설정값.
-        const pageCacheDrop = config.ratioForPageCacheDrop
+        const dropConditions = [config.ratioForPageCacheDrop, config.ratioForAllDrop]
 
         Array.from(nodes).forEach(([_, info]) => {
             const usage = Math.round(info.bufferMem / info.totalMem * 100)
-            const newInfo = { ...info }
+            const newInfo: MemoryCache = { ...info }
 
-            if (usage > allDrop.ratio) { // level 2
+            if (usage > dropConditions[0].ratio) { // level 2
                 // 현재 조건이 레벨 2일때 작업 수행
                 if (newInfo.currentLevel == 1) {
-                    newInfo.level_2_Started = now
+                    newInfo.level_Started[ALL_DROP] = now
                 } else if (newInfo.currentLevel == 0) {
-                    newInfo.level_1_Started = now
-                    newInfo.level_2_Started = now
+                    newInfo.level_Started[PAGE_DROP] = now
+                    newInfo.level_Started[ALL_DROP] = now
                 }
                 newInfo.currentLevel = 2
-            } else if (usage > pageCacheDrop.ratio) { // level 1
+            } else if (usage > dropConditions[1].ratio) { // level 1
                 // 현재 조건이 레벨 1일때의 작업 수행
                 if (newInfo.currentLevel == 2) {
-                    newInfo.level_2_Started = 0
+                    newInfo.level_Started[ALL_DROP] = 0
                 } else if (newInfo.currentLevel == 0) {
-                    newInfo.level_1_Started = now
+                    newInfo.level_Started[PAGE_DROP] = now
                 }
                 newInfo.currentLevel = 1
             } else {
                 // 현재 조건이 레벨 0일때의 작업 수행
                 if (newInfo.currentLevel == 2) {
-                    newInfo.level_2_Started = 0
-                    newInfo.level_1_Started = 0
+                    newInfo.level_Started[ALL_DROP] = 0
+                    newInfo.level_Started[PAGE_DROP] = 0
                 } else if (newInfo.currentLevel == 1) {
-                    newInfo.level_1_Started = 0
+                    newInfo.level_Started[PAGE_DROP] = 0
                 }
                 newInfo.currentLevel = 0
             }
@@ -206,44 +206,30 @@ export class MemoryMonitor {
                 newInfo.actionTime = 0
             }
             // 새롭게 설정된 레벨에 따라 작업 수행
-            if (newInfo.currentLevel == 2) {
-                // 레벨 2 인경우 레벨 2가 시작된 시점 부터의 경과 시간을 확인 한 후 
-                // 언제 drop 시점을 계산
-                let fireTime = newInfo.level_2_Started + allDrop.duration
-                if (newInfo.actionTime != 0) {
-                    const minNextTime = newInfo.actionTime + config.actionBuffer
-                    if (minNextTime > fireTime) {
-                        fireTime = minNextTime
-                    }
-                }
-                // drop시점이 지났으면 작업 시점을 저장 하고 drop 수행
-                if (fireTime < now) {
-                    newInfo.actionTime = now
-                    this.processPageDrop(info, config, allDrop, COMMAND_FOR_ALL_DROP)
-                }
-            }
-            if (newInfo.currentLevel == 1) {
-                // 레벨 1 인경우 레벨 1이 시작된 시점 부터의 경과 시간을 확인 한 후 
-                // 언제 drop 시점을 계산
-                // 만약 레벨 2에 의해 작업이 수행되었으면 actionTime이 설정되므로 동시에 처리되지 않음 
-                let fireTime = newInfo.level_1_Started + pageCacheDrop.duration
-                if (newInfo.actionTime != 0) {
-                    const minNextTime = newInfo.actionTime + config.actionBuffer
-                    if (minNextTime > fireTime) {
-                        fireTime = minNextTime
-                    }
-                }
-                // drop시점이 지났으면 작업 시점을 저장 하고 drop 수행
-                if (fireTime < now) {
-                    newInfo.actionTime = now
-                    this.processPageDrop(info, config, pageCacheDrop, COMMAND_FOR_PAGE_DROP)
-                }
+            if (newInfo.currentLevel - 1 == ALL_DROP) {
+                newInfo.actionTime = this.dropMemory(dropConditions, config, newInfo, info, now, ALL_DROP)
+            } else if (newInfo.currentLevel - 1 == PAGE_DROP) {
+                newInfo.actionTime = this.dropMemory(dropConditions, config, newInfo, info, now, PAGE_DROP)
             }
             // 노드 처리 정보를 저장 하고 종료 
             nodes.set(newInfo.nodeName, newInfo)
         })
     }
-
+    dropMemory = (dropConditions: Array<DropCondition>, config: IConfig, newInfo: MemoryCache, info: MemoryCache, now: number, level: number): number => {
+        let fireTime = newInfo.level_Started[level] + dropConditions[level].duration
+        if (newInfo.actionTime != 0) {
+            const minNextTime = newInfo.actionTime + config.actionBuffer
+            if (minNextTime > fireTime) {
+                fireTime = minNextTime
+            }
+        }
+        // drop시점이 지났으면 작업 시점을 저장 하고 drop 수행
+        if (fireTime < now) {
+            this.processPageDrop(info, config, dropConditions[level], COMMANDS_FOR_DROP[level])
+            return now
+        }
+        return newInfo.actionTime
+    }
     /**
      * 현재 상태를 로그로 출력
      * @param nodes 노드 정보 목록
@@ -252,14 +238,6 @@ export class MemoryMonitor {
     printCurrentStatus = (nodes: Map<string, MemoryCache>, config: IConfig) => {
         Log.info('Memory status')
         console.table(Array.from(nodes).map(([_, info]) => {
-            // let diffStr = ""
-            // if (info.diffMem < 0) {
-            //     diffStr = `${util.bytesToSize(info.diffMem * -1)} ↓`
-            // } else if (info.diffMem > 0) {
-            //     diffStr = `↑ ${util.bytesToSize(info.diffMem)}`
-            // } else {
-            //     diffStr = "0B"
-            // }
             return {
                 nodeIp: info.ipAddress,
                 totolMem: util.bytesToSize(info.totalMem),
