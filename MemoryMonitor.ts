@@ -102,25 +102,25 @@ export class MemoryMonitor {
      */
     getTotalMemory = async (nodes: Map<string, MemoryCache>, dataCollector: DataCollector) => {
         const ret = await dataCollector.getTotalMemory()
+        // 모니터링 정보중에 사라졌으면 삭제
+        const nodeNames = ret.map(node => node.nodeName)
+        Array.from(nodes)
+            .map(([_, node]) => {node.labels = new Map(); return node.nodeName})
+            .filter(nodeName => !nodeNames.includes(nodeName))
+            .forEach(nodeName => {
+                nodes.delete(nodeName)
+            })
         ret.forEach(({ ipAddress, memoryUsage, nodeName, labelKey, labelValue }) => {
             const info = nodes.get(nodeName)
             if (info === undefined) {
                 const labels = new Map<string, string>()
                 labels.set(labelKey, labelValue)
-                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0, labels:labels })
+                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0, labels: labels })
             } else {
-                const lables = info.labels.set(labelKey, labelValue)
+                info.labels.set(labelKey, labelValue)
                 nodes.set(nodeName, { ...info, totalMem: memoryUsage })
             }
         })
-        // 모니터링 정보중에 사라졌으면 삭제
-        const nodeNames = ret.map(node => node.nodeName)
-        Array.from(nodes)
-            .map(([_, node]) => node.nodeName)
-            .filter(nodeName => !nodeNames.includes(nodeName))
-            .forEach(nodeName => {
-                nodes.delete(nodeName)
-            })
     }
 
     /**
@@ -246,7 +246,7 @@ export class MemoryMonitor {
     printCurrentStatus = (nodes: Map<string, MemoryCache>, config: IConfig) => {
         Log.info('Memory status')
         console.table(Array.from(nodes).map(([_, info]) => {
-            const label =Array.from(info.labels).map(([k,v]) => `${k}=${v}`).join(", ")
+            const label = Array.from(info.labels).map(([k, v]) => `${k}=${v}`).join(", ")
             return {
                 nodeIp: info.ipAddress,
                 totolMem: util.bytesToSize(info.totalMem),
