@@ -77,11 +77,12 @@ class PrometheusDataCollector implements DataCollector {
         try {
             const result = (await this.prom.instantQuery(query)).result as InstantResult[]
             const ret = new Array<CacheMemory>()
+            Log.debug(`query : ${query}`)
 
             Array.from(this.nodeSelectors).forEach(([key, value]) => {
                 result.filter(({ metric }) => metric.labels[`label_${key}`] == value)
                     .forEach(data => {
-                        ret.push({ ipAddress: data.metric.labels.ip, memoryUsage: data.value.value, nodeName: data.metric.labels.node })
+                        ret.push({ ipAddress: data.metric.labels.ip, memoryUsage: data.value.value, nodeName: data.metric.labels.node, labelKey:key, labelValue:value})
                     })
             })
             return Promise.resolve(ret)

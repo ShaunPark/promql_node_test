@@ -5,6 +5,7 @@ import * as util from "./utils/Util";
 import { DataCollector } from "./interfaces/DateCollector";
 import { ExLogger } from "./interfaces/ExLogger";
 import { Executor } from "./interfaces/Excutor";
+import { join } from "path/posix";
 
 const ALL_DROP = 1
 const PAGE_DROP = 0
@@ -27,6 +28,10 @@ export class MemoryMonitor {
      */
     main = async (dataCollector: DataCollector) => {
         const nodes: Map<string, MemoryCache> = new Map()
+        const config = this.configManager.config
+
+        Log.info(`[MemoryMonitor.main] Start node memory montoring.`)
+        Log.info(`[MemoryMonitor.main] targetLabels : ${config.prometheus.nodeSelector}`)
 
         setInterval(async () => {
             try {
@@ -97,11 +102,14 @@ export class MemoryMonitor {
      */
     getTotalMemory = async (nodes: Map<string, MemoryCache>, dataCollector: DataCollector) => {
         const ret = await dataCollector.getTotalMemory()
-        ret.forEach(({ ipAddress, memoryUsage, nodeName }) => {
+        ret.forEach(({ ipAddress, memoryUsage, nodeName, labelKey, labelValue }) => {
             const info = nodes.get(nodeName)
             if (info === undefined) {
-                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0 })
+                const labels = new Map<string, string>()
+                labels.set(labelKey, labelValue)
+                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0, labels:labels })
             } else {
+                const lables = info.labels.set(labelKey, labelValue)
                 nodes.set(nodeName, { ...info, totalMem: memoryUsage })
             }
         })
@@ -238,11 +246,13 @@ export class MemoryMonitor {
     printCurrentStatus = (nodes: Map<string, MemoryCache>, config: IConfig) => {
         Log.info('Memory status')
         console.table(Array.from(nodes).map(([_, info]) => {
+            const label =Array.from(info.labels).map(([k,v]) => `${k}=${v}`).join(", ")
             return {
                 nodeIp: info.ipAddress,
                 totolMem: util.bytesToSize(info.totalMem),
                 bufferMem: util.bytesToSize(info.bufferMem),
                 percent: `${util.percent(info.bufferMem, info.totalMem)}%`,
+                matchLabels: label
                 // now: new Date().toLocaleTimeString(),
                 // level: info.currentLevel,
                 // actionTime: (info.actionTime != 0) ? new Date(info.actionTime).toLocaleTimeString() : "--",

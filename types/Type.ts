@@ -49,7 +49,8 @@ export type MemoryCache = {
     currentLevel: number,
     level_Started: Array<number>
     diffMem: number,
-    actionTime: number
+    actionTime: number,
+    labels: Map<string, string>
 }
 
 export type InstantResult = {

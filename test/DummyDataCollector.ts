@@ -20,13 +20,13 @@ export class DummyDataCollector implements DataCollector {
         const timeDiff = now - this.startTime;
         const index = Math.ceil(timeDiff / (unit * 1000))
 
-        ret.push({ ipAddress: "0.0.0.0", memoryUsage: temp[index] , nodeName:"test"})
+        ret.push({ ipAddress: "0.0.0.0", memoryUsage: temp[index] , nodeName:"test", labelKey:"worker", labelValue:"value"})
 
         return Promise.resolve(ret)
     }
     getTotalMemory = async (): Promise<Array<CacheMemory>> => {
         const ret = new Array<CacheMemory>()
-        ret.push({ ipAddress: "0.0.0.0", memoryUsage: 100 , nodeName:"test"})
+        ret.push({ ipAddress: "0.0.0.0", memoryUsage: 100 , nodeName:"test", labelKey:"worker", labelValue:"value"})
         return Promise.resolve(ret)
     }
 }
