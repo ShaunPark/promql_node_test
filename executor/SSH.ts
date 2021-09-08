@@ -16,7 +16,10 @@ class SSH implements Executor {
 
             if (sshFile) {
                 conn
-                    .on('error', (err) => { Log.error(err) })
+                    .on('error', (err) => {
+                        Log.error(`[SSH.exec.onError] ${JSON.stringify(err)}`)
+                        throw err
+                    })
                     .on('end', () => { Log.info("[SSH.exec] Connection ended") })
                     .on('close', () => {
                         Log.info("[SSH.exec] Connection closed")
@@ -25,8 +28,9 @@ class SSH implements Executor {
                         Log.debug('[SSH.exec] SShClient ready');
                         try {
                             conn.exec(command, (err: any, stream: any) => {
-                                if (err !== undefined) {
-                                    Log.error(`[SSH.exec] ${err}`)
+                                if (err != undefined) {
+                                    Log.error(`[SSH.exec.onExecErr] ${JSON.stringify(err)}`)
+                                    throw err
                                 }
                                 stream
                                     .on('data', (data: any) => {
@@ -39,7 +43,8 @@ class SSH implements Executor {
                                     })
                             });
                         } catch (err) {
-                            Log.error(`[SSH.exec] ${err}-`)
+                            Log.error(`[SSH.exec.onReady] ${JSON.stringify(err)}`)
+                            throw err
                         }
                     })
                     .connect({

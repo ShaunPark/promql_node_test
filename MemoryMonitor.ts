@@ -5,12 +5,16 @@ import * as util from "./utils/Util";
 import { DataCollector } from "./interfaces/DateCollector";
 import { ExLogger } from "./interfaces/ExLogger";
 import { Executor } from "./interfaces/Excutor";
-import { join } from "path/posix";
 
-const ALL_DROP = 1
 const PAGE_DROP = 0
-const COMMANDS_FOR_DROP = ["echo 1 > /proc/sys/vm/drop_caches", "echo 3 > /proc/sys/vm/drop_caches"]
-const COMMAND_SWAP_OFFON = "swapoff -a && swapon -a"
+const ALL_DROP = 1
+
+const LEVEL_NORMAL = 0
+const LEVEL_PAGE_DROP = 1
+const LEVEL_ALL_DROP = 2
+
+const COMMANDS_FOR_DROP = ["sudo sh -c 'echo 1 > /proc/sys/vm/drop_caches'", "sudo bash -c 'echo 3 > /proc/sys/vm/drop_caches'"]
+const COMMAND_SWAP_OFFON = "sudo swapoff -a && sudo swapon -a"
 
 export class MemoryMonitor {
 
@@ -101,26 +105,31 @@ export class MemoryMonitor {
      * @param dataCollector 메모리 정보를 가져올 data collector
      */
     getTotalMemory = async (nodes: Map<string, MemoryCache>, dataCollector: DataCollector) => {
-        const ret = await dataCollector.getTotalMemory()
-        // 모니터링 정보중에 사라졌으면 삭제
-        const nodeNames = ret.map(node => node.nodeName)
-        Array.from(nodes)
-            .map(([_, node]) => {node.labels = new Map(); return node.nodeName})
-            .filter(nodeName => !nodeNames.includes(nodeName))
-            .forEach(nodeName => {
-                nodes.delete(nodeName)
+        try {
+            const ret = await dataCollector.getTotalMemory()
+            // 모니터링 정보중에 사라졌으면 삭제
+            const nodeNames = ret.map(node => node.nodeName)
+            Array.from(nodes)
+                .map(([_, node]) => { node.labels = new Map(); return node.nodeName })
+                .filter(nodeName => !nodeNames.includes(nodeName))
+                .forEach(nodeName => {
+                    nodes.delete(nodeName)
+                })
+            ret.forEach(({ ipAddress, memoryUsage, nodeName, labelKey, labelValue }) => {
+                const info = nodes.get(nodeName)
+                if (info === undefined) {
+                    const labels = new Map<string, string>()
+                    labels.set(labelKey, labelValue)
+                    nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0, labels: labels })
+                } else {
+                    info.labels.set(labelKey, labelValue)
+                    nodes.set(nodeName, { ...info, totalMem: memoryUsage })
+                }
             })
-        ret.forEach(({ ipAddress, memoryUsage, nodeName, labelKey, labelValue }) => {
-            const info = nodes.get(nodeName)
-            if (info === undefined) {
-                const labels = new Map<string, string>()
-                labels.set(labelKey, labelValue)
-                nodes.set(nodeName, { ipAddress: ipAddress, nodeName: nodeName, totalMem: memoryUsage, bufferMem: -1, level_Started: [0, 0], currentLevel: 0, diffMem: 0, actionTime: 0, labels: labels })
-            } else {
-                info.labels.set(labelKey, labelValue)
-                nodes.set(nodeName, { ...info, totalMem: memoryUsage })
-            }
-        })
+        } catch (err) {
+            Log.error("Error on getTotalMemory: " + JSON.stringify(err))
+            throw err
+        }
     }
 
     /**
@@ -147,12 +156,15 @@ export class MemoryMonitor {
      * @param cmd page drop에 사용될 명령어
      */
     processPageDrop = (info: MemoryCache, config: IConfig, condition: DropCondition, cmd: string) => {
-        const msg = ` ${info.nodeName} Buffer usage is over ${condition.ratio}% and has continued more than ${condition.duration} minutes. `
-        Log.info(`[MemoryMonitor.processPageDrop] ${msg}`)
-        this.exLogger.info(info.nodeName, msg)
+        const durationInSeconds = condition.duration / 1000
+        const msg = `Buffer + Cache memory usage is over ${condition.ratio}% and has continued more than ${durationInSeconds} seconds. `
+        Log.info(`[MemoryMonitor.processPageDrop] ${info.nodeName} ${msg}`)
         if (config.dryRun) {
-            Log.info(`[MemoryMonitor.processPageDrop] DryRun is enabled. Drop execution skipped. `)
+            const msg2 = "DryRun is enabled. Drop execution is skipped."
+            this.exLogger.info(info.nodeName, `${msg} ${msg2}`)
+            Log.info(`[MemoryMonitor.processPageDrop] ${msg2}`)
         } else {
+            this.exLogger.info(info.nodeName, msg)
             try {
                 // IP로 접근할 것인지 노드명으로 접근할 것인지 설정에 따라 수행
                 if (config.ssh.useIpAddress) {
@@ -166,6 +178,7 @@ export class MemoryMonitor {
             }
         }
     }
+
 
     /**
      * 
@@ -182,41 +195,41 @@ export class MemoryMonitor {
             const usage = Math.round(info.bufferMem / info.totalMem * 100)
             const newInfo: MemoryCache = { ...info }
 
-            if (usage > dropConditions[0].ratio) { // level 2
+            if (usage > dropConditions[ALL_DROP].ratio) { // level 2
                 // 현재 조건이 레벨 2일때 작업 수행
-                if (newInfo.currentLevel == 1) {
+                if (newInfo.currentLevel == LEVEL_PAGE_DROP) {
                     newInfo.level_Started[ALL_DROP] = now
-                } else if (newInfo.currentLevel == 0) {
+                } else if (newInfo.currentLevel == LEVEL_NORMAL) {
                     newInfo.level_Started[PAGE_DROP] = now
                     newInfo.level_Started[ALL_DROP] = now
                 }
-                newInfo.currentLevel = 2
-            } else if (usage > dropConditions[1].ratio) { // level 1
+                newInfo.currentLevel = LEVEL_ALL_DROP
+            } else if (usage > dropConditions[PAGE_DROP].ratio) { // level 1
                 // 현재 조건이 레벨 1일때의 작업 수행
-                if (newInfo.currentLevel == 2) {
+                if (newInfo.currentLevel == LEVEL_ALL_DROP) {
                     newInfo.level_Started[ALL_DROP] = 0
-                } else if (newInfo.currentLevel == 0) {
+                } else if (newInfo.currentLevel == LEVEL_NORMAL) {
                     newInfo.level_Started[PAGE_DROP] = now
                 }
-                newInfo.currentLevel = 1
+                newInfo.currentLevel = LEVEL_PAGE_DROP
             } else {
                 // 현재 조건이 레벨 0일때의 작업 수행
-                if (newInfo.currentLevel == 2) {
+                if (newInfo.currentLevel == LEVEL_ALL_DROP) {
                     newInfo.level_Started[ALL_DROP] = 0
                     newInfo.level_Started[PAGE_DROP] = 0
-                } else if (newInfo.currentLevel == 1) {
+                } else if (newInfo.currentLevel == LEVEL_PAGE_DROP) {
                     newInfo.level_Started[PAGE_DROP] = 0
                 }
-                newInfo.currentLevel = 0
+                newInfo.currentLevel = LEVEL_NORMAL
             }
             // 만약 지난번 drop을 한 후 일정 버퍼만큼의 시간이 지났으면 지난번 작업 시점 초기화 
             if (newInfo.actionTime + config.actionBuffer < now) {
                 newInfo.actionTime = 0
             }
             // 새롭게 설정된 레벨에 따라 작업 수행
-            if (newInfo.currentLevel - 1 == ALL_DROP) {
+            if (newInfo.currentLevel == LEVEL_ALL_DROP) {
                 newInfo.actionTime = this.dropMemory(dropConditions, config, newInfo, info, now, ALL_DROP)
-            } else if (newInfo.currentLevel - 1 == PAGE_DROP) {
+            } else if (newInfo.currentLevel == LEVEL_PAGE_DROP) {
                 newInfo.actionTime = this.dropMemory(dropConditions, config, newInfo, info, now, PAGE_DROP)
             }
             // 노드 처리 정보를 저장 하고 종료 
